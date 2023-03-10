@@ -44,6 +44,14 @@ func convertResponseTransaction(u models.Transaction) transactiondto.Transaction
 		Status:     u.Status,
 		Cart:       u.Cart,
 	}
+
+}
+
+func convertResponseTransactionUnfinished(u models.Transaction) transactiondto.TransactionResponse {
+	return transactiondto.TransactionResponse{
+		SubTotal: u.SubTotal,
+		TotalQty: u.TotalQty,
+	}
 }
 
 func (h *handlerTransaction) FindTransactions(c echo.Context) error {
@@ -118,6 +126,22 @@ func (h *handlerTransaction) GetTransaction(c echo.Context) error {
 	return c.JSON(http.StatusOK, dto.SuccessResult{
 		Code: http.StatusOK,
 		Data: convertResponseTransaction(transaction),
+	})
+}
+
+func (h *handlerTransaction) GetUncheckedOutTransaction(c echo.Context) error {
+	userLogin := c.Get("userLogin")
+	userID := userLogin.(jwt.MapClaims)["id"].(float64)
+	transaction, err := h.TransactionRepository.GetUncheckedOutTransactionByUserID(int(userID))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, dto.ErrorResult{
+			Code:    http.StatusBadRequest,
+			Message: err.Error(),
+		})
+	}
+	return c.JSON(http.StatusOK, dto.SuccessResult{
+		Code: http.StatusOK,
+		Data: convertResponseTransactionUnfinished(transaction),
 	})
 }
 
